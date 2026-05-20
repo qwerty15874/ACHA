@@ -1,0 +1,5 @@
+adafruit-circuitpython-ads1x15
+rpi-ws281x
+RPi.GPIO
+board
+busio

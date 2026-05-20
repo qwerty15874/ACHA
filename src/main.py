@@ -1,0 +1,63 @@
+# src/main.py
+# CPD 타일 낙상방지 시스템 — 진입점
+# 실행: python src/main.py
+
+import time
+import signal
+import sys
+
+from sensor import MoistureSensor
+from classifier import classify_all
+from led import LEDController
+from config.settings import POLL_INTERVAL_SEC, CHANNEL_MAP
+
+# ----------------------------------------------------------
+# 종료 처리 (Ctrl+C → LED 소등 후 종료)
+# ----------------------------------------------------------
+_led: LEDController | None = None
+
+def _shutdown(sig, frame):
+    print("\n[종료] LED 소등 중...")
+    if _led:
+        _led.clear()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, _shutdown)
+signal.signal(signal.SIGTERM, _shutdown)
+
+# ----------------------------------------------------------
+# 메인 루프
+# ----------------------------------------------------------
+_LEVEL_LABEL = {0: "건조 ", 1: "수막 ⚠", 2: "고임 🚨"}
+
+def main():
+    global _led
+
+    print("[시작] CPD 타일 수분감지 시스템")
+    print(f"       블록 수    : {len(CHANNEL_MAP)}")
+    print(f"       폴링 주기  : {POLL_INTERVAL_SEC}초")
+    print(f"       종료      : Ctrl+C\n")
+
+    sensor = MoistureSensor()
+    _led = LEDController()
+
+    while True:
+        raw_data = sensor.read_all()
+        classified = classify_all(raw_data)
+
+        # 콘솔 출력 (디버그)
+        parts = []
+        for ch, d in classified.items():
+            parts.append(
+                f"{d['block']}: {d['voltage']:.3f}V → {_LEVEL_LABEL[d['level']]}"
+            )
+        print(" | ".join(parts))
+
+        # LED 업데이트
+        _led.update_all(classified)
+
+        time.sleep(POLL_INTERVAL_SEC)
+
+
+if __name__ == "__main__":
+    main()
