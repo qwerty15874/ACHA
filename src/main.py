@@ -1,10 +1,13 @@
 # src/main.py
 # CPD 타일 낙상방지 시스템 — 진입점
-# 실행: python src/main.py
+# 실행: sudo python src/main.py  (WS2812B DMA 사용으로 sudo 필요)
+
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
 import signal
-import sys
 
 from sensor import MoistureSensor
 from classifier import classify_all
@@ -14,7 +17,7 @@ from config.settings import POLL_INTERVAL_SEC, CHANNEL_MAP
 # ----------------------------------------------------------
 # 종료 처리 (Ctrl+C → LED 소등 후 종료)
 # ----------------------------------------------------------
-_led: LEDController | None = None
+_led = None
 
 def _shutdown(sig, frame):
     print("\n[종료] LED 소등 중...")
