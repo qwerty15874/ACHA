@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv\\\\Scripts\\\\python.exe -c \"import pygame; print\\(pygame.version.ver\\)\")",
+      "Bash(ls \"C:/Users/khk86/AppData/Local/Programs/Python/\" 2>&1 || echo \"not found\")",
+      "Read(//c/Users/khk86/AppData/Local/Programs/Python/**)",
+      "Bash(\"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" -m pip install pygame)",
+      "Bash(\"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" test_display.py)",
+      "Bash(timeout 3 \"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" test_display.py)",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}
