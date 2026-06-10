@@ -79,3 +79,14 @@ LED_COLOR = {
 # 폴링
 # ----------------------------------------------------------
 POLL_INTERVAL_SEC = 1.0   # 센서 읽기 주기 (초)
+
+# ----------------------------------------------------------
+# Firebase Realtime Database
+# TODO: Firebase 콘솔에서 발급한 값으로 교체
+# ----------------------------------------------------------
+FIREBASE_CRED_PATH = "config/serviceAccountKey.json"   # 서비스 계정 키 파일 경로
+FIREBASE_DB_URL = "https://<project-id>-default-rtdb.firebaseio.com"
+
+# RTDB 경로
+FIREBASE_PATH_STATUS   = "acha/status"     # RPi → RTDB (센서 데이터)
+FIREBASE_PATH_COMMANDS = "acha/commands"   # RTDB → RPi (제어 명령)

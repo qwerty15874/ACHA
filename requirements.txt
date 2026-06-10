@@ -3,3 +3,4 @@ rpi-ws281x
 RPi.GPIO
 board
 busio
+firebase-admin
