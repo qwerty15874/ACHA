@@ -24,9 +24,8 @@
 |------|------|------|------|
 | 싱글보드컴퓨터 | Raspberry Pi (모델 미정) | 1 | 중앙 제어 |
 | ADC | ADS1115 | 1 | 아날로그→디지털 변환 (I2C, 4채널) |
-| LED 스트립 | [SMG] 5V 5050 RGB 에폭시 코팅 1M/60LED [SZH-LD311] | 4 | 수분 단계 시각화 |
+| LED 스트립 | WS2813B 5050 RGB 에폭시 코팅 1M/60LED [SZH-LD311] | 4 | 수분 단계 시각화 |
 | 기준 저항 | 10kΩ | 4+ | 분압회로 |
-| PWM 드라이버 | PCA9685 (16ch, I2C) | 1 | R/G/B PWM 제어 (I2C 공유) |
 | 커넥터 | MCT-S08 (8핀) | 블록간 연결 | 블록간 전기 연결 |
 | 전극 | 구리테이프 10mm | - | 저항식 수분 감지 |
 
@@ -49,7 +48,7 @@ L1 — 메인 하우징               ← RPi + ADS1115 수납, M3 나사 고정
   |              |
 [블록3] ─── [블록4]
 
-초록선(실선)  : VCC(5V) / GND / R / G / B — 블록별 PCA9685 채널
+초록선(실선)  : VCC / GND / DIN (데이지체인) / BI (백업)
 주황선(점선)  : SIG 아날로그 — 블록별 ADS1115 채널
 ```
 
@@ -84,24 +83,15 @@ CHANNEL_MAP = {
 }
 ```
 
-### Raspberry Pi → PCA9685 (I2C, ADS1115과 버스 공유)
+### Raspberry Pi GPIO → WS2813B LED
 
 ```python
-# PCA9685 I2C 주소 (기본값, A0~A5 모두 GND)
-PCA9685_ADDRESS = 0x40
-
-# PCA9685 채널 → 블록별 R/G/B 매핑
-# 채널 = 블록번호 * 3 + 색상오프셋 (0=R, 1=G, 2=B)
-LED_CHANNEL_MAP = {
-    "블록1": {"R": 0,  "G": 1,  "B": 2},
-    "블록2": {"R": 3,  "G": 4,  "B": 5},
-    "블록3": {"R": 6,  "G": 7,  "B": 8},
-    "블록4": {"R": 9,  "G": 10, "B": 11},
-}
-
-# SZH-LD311 전극: 5V(공통 양극), R/G/B(음극 — PCA9685로 PWM)
-# PCA9685 출력은 open-drain → MOSFET(IRLZ44N 등)으로 5V LED 구동
-PWM_FREQ_HZ = 1000   # LED용 1kHz
+# WS2813B: DIN(데이터) + BI(백업입력) 2선 제어
+# BI는 이전 LED의 DOUT에 연결 — 1개 LED 단선 시 이후 LED 동작 유지
+# TODO: 조립 후 실제 연결 핀으로 수정
+LED_DATA_PIN = 18    # BCM GPIO18 (PWM0, 권장) — 물리 핀 12
+LED_COUNT = 60       # 스트립 1개당 LED 수 (1M/60LED)
+LED_STRIP_COUNT = 4  # 블록 수
 ```
 
 ---
@@ -130,13 +120,12 @@ PWM_FREQ_HZ = 1000   # LED용 1kHz
 
 | 핀 번호 | 신호 | 전류 | 설명 |
 |---------|------|------|------|
-| 1, 2 | VCC (5V) | 2A × 2 = 4A | LED 공통 양극 전원 |
-| 3 | R | PWM | PCA9685 채널 → MOSFET → LED R 음극 |
-| 4 | G | PWM | PCA9685 채널 → MOSFET → LED G 음극 |
-| 5 | B | PWM | PCA9685 채널 → MOSFET → LED B 음극 |
+| 1, 2 | VCC (5V) | 2A × 2 = 4A | LED 전원 (데이지체인) |
+| 3, 4 | GND | 2A × 2 = 4A | 공통 GND (데이지체인) |
+| 5 | DIN/DOUT | 신호 | WS2813B 데이터 (데이지체인) |
 | 6 | 3.3V | 신호 | ADS1115 전원 |
 | 7 | SIG | 아날로그 | V_out → ADS1115 Ax |
-| 8 | GND | - | 공통 GND |
+| 8 | GND | - | SIG 기준 GND |
 
 ---
 
@@ -156,17 +145,16 @@ THRESH_DRY = 3.0   # V — 이 이상이면 건조
 THRESH_WET = 1.5   # V — 이 이하면 고임
 ```
 
-### LED 색상 (SZH-LD311, RGB — PCA9685 PWM duty 0~4095)
+### LED 색상 (WS2813B, RGB 0~255)
 
 ```python
 # TODO: 최종 색상 디자인 확정 전 임시값
-# 값 = PCA9685 duty (0=OFF, 4095=MAX)
-# 공통 양극이므로 duty가 높을수록 해당 색 밝아짐
 LED_COLOR = {
-    0: (4095, 4095, 4095),   # 단계0 — 백색 (야간 조명 겸용)
-    1: (4095, 2700, 0),      # 단계1 — 황색 (주의)   ← 색 A 미확정
-    2: (4095, 0,    0),      # 단계2 — 적색 (위험)   ← 색 B 미확정
+    0: (255, 255, 255),   # 단계0 — 백색 (야간 조명 겸용)
+    1: (255, 165, 0),     # 단계1 — 황색 (주의)   ← 색 A 미확정
+    2: (255, 0,   0),     # 단계2 — 적색 (위험)   ← 색 B 미확정
 }
+LED_BRIGHTNESS = 128      # 0~255
 ```
 
 ### 폴링 주기
@@ -201,8 +189,7 @@ cpd-tile-system/
 - [ ] LED 색 A, 색 B 최종 확정 (디자인팀)
 - [ ] threshold 값 캘리브레이션 (실제 센서 측정 후)
 - [ ] RPi 모델 확정 → GPIO 핀 물리번호 검증
-- [ ] PCA9685 MOSFET 회로 확정 (IRLZ44N 또는 동급 N-ch MOSFET × 12)
-- [ ] PCA9685 I2C 주소 확인 (기본 0x40, ADS1115 0x48과 충돌 없음)
+- [ ] LED_DATA_PIN 실제 연결 핀으로 수정
 - [ ] 포고핀 규격 확정 (직경, 스트로크)
 - [ ] 하우징 3D 치수 확정
 
@@ -213,12 +200,12 @@ cpd-tile-system/
 ```
 RPi.GPIO
 adafruit-circuitpython-ads1x15
-adafruit-circuitpython-pca9685
+rpi_ws281x
 board
 busio
 ```
 
 설치:
 ```bash
-pip install adafruit-circuitpython-ads1x15 adafruit-circuitpython-pca9685
+pip install adafruit-circuitpython-ads1x15 rpi-ws281x
 ```
