@@ -26,6 +26,9 @@ ADS1115_I2C_ADDRESS = 0x48
 # GAIN_16   = ±0.256V
 ADS1115_GAIN = 1
 
+# 활성 채널 목록 — PoC: [0], 4블록 완성: [0, 1, 2, 3]
+ACTIVE_CHANNELS = [0]
+
 # ADS1115 채널 → 블록 매핑
 # 키: ADS1115 채널번호 (0~3)
 # 값: 블록 이름 (로그/디버그용)
@@ -37,18 +40,14 @@ CHANNEL_MAP = {
 }
 
 # ----------------------------------------------------------
-# WS2812B LED Strip
+# RGB LED Strip (비주소형, 공통 양극 5V+R+G+B 4선)
 # TODO: 조립 후 실제 연결한 GPIO 핀으로 수정
 # ----------------------------------------------------------
-LED_DATA_PIN = 18         # BCM GPIO18 (PWM0 권장), 물리 핀 12
-LED_COUNT_PER_BLOCK = 15  # 블록당 LED 개수 — 실제 스트립 잘라서 확인
-BLOCK_COUNT = 4           # 총 블록 수
-LED_COUNT = LED_COUNT_PER_BLOCK * BLOCK_COUNT  # 총 LED 개수
-LED_FREQ_HZ = 800000      # WS2812B 표준
-LED_DMA = 10
-LED_INVERT = False
-LED_CHANNEL = 0
-LED_BRIGHTNESS = 128      # 0~255 (절반 밝기, 야간 조명 고려)
+LED_PIN_R = 18   # BCM GPIO18, 물리 핀 12
+LED_PIN_G = 23   # BCM GPIO23, 물리 핀 16
+LED_PIN_B = 24   # BCM GPIO24, 물리 핀 18
+LED_PWM_FREQ = 200        # PWM 주파수 (Hz), 200 이상이면 깜빡임 없음
+LED_BRIGHTNESS = 128      # 0~255 (전체 밝기 스케일)
 
 # ----------------------------------------------------------
 # 수분 판정 threshold (단위: Volt)
@@ -61,9 +60,11 @@ LED_BRIGHTNESS = 128      # 0~255 (절반 밝기, 야간 조명 고려)
 #   수막(R≈100kΩ) → V ≈ 3.0V
 #   고임(R≈5kΩ)  → V ≈ 1.1V
 
-THRESH_DRY = 3.0   # V — 이 이상이면 단계0(건조)
-THRESH_WET = 1.5   # V — 이 이하면 단계2(고임)
-# 중간값(THRESH_WET < V < THRESH_DRY) → 단계1(수막)
+# 실측 기반 캘리브레이션 (R_ref=10kΩ, 단일 타일 PoC)
+# 건조: ~+0.6V / 수막·고임: ~0V
+# 수막과 고임 구분은 R_ref를 100kΩ 이상으로 교체 후 재캘리브레이션 필요
+THRESH_DRY = 0.4   # V — 이 이상이면 단계0(건조)
+THRESH_WET = 0.2   # V — 이 이하면 단계2(고임/수막 통합)
 
 # ----------------------------------------------------------
 # LED 색상 (R, G, B)

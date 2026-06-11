@@ -7,7 +7,15 @@
       "Bash(\"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" -m pip install pygame)",
       "Bash(\"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" test_display.py)",
       "Bash(timeout 3 \"C:/Users/khk86/AppData/Local/Programs/Python/Python39/python.exe\" test_display.py)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(touch /home/user/Documents/dev/ACHA/tests/__init__.py)",
+      "Bash(.venv/bin/python -c \"import lgpio\")",
+      "Bash(.venv/bin/python -c \"import board\")",
+      "Bash(sudo apt-get install -y python3-lgpio)",
+      "Bash(.venv/bin/python -c \"import adafruit_ads1x15.ads1115 as ADS; print\\(dir\\(ADS\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "/home/user/Documents/dev/ACHA/tests"
     ]
   }
 }

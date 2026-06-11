@@ -14,19 +14,38 @@
 import argparse
 import sys
 import time
+from pathlib import Path
 
-# ADS1115 / board 라이브러리가 없는 환경(비-RPi)에서도
-# 임포트 에러 대신 안내 메시지를 출력하고 종료.
+# 프로젝트 루트를 sys.path에 추가 (직접 실행 및 -m 모드 모두 지원)
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# ADS1115 / board 라이브러리가 없는 환경(비-RPi)에서는 시뮬레이션 모드로 동작
+import math
+import random
+
+from src.classifier import classify
+from config.settings import ACTIVE_CHANNELS, CHANNEL_MAP
+
 try:
     from src.sensor import MoistureSensor
-    from src.classifier import classify
-    from config.settings import THRESH_DRY, THRESH_WET, CHANNEL_MAP
 except ImportError as e:
-    sys.exit(
-        f"[오류] 필요한 라이브러리를 불러올 수 없습니다: {e}\n"
-        "  pip install adafruit-circuitpython-ads1x15\n"
-        "  Raspberry Pi에서 실행 중인지 확인하세요."
-    )
+    print(f"[시뮬레이션 모드] 하드웨어 라이브러리 없음: {e}")
+    print("  실제 ADS1115 없이 모의 전압값으로 동작합니다.\n")
+
+    class MoistureSensor:
+        """RPi 하드웨어 없이 동작하는 시뮬레이션 센서"""
+        _t = 0.0
+
+        def read_all(self) -> dict:
+            MoistureSensor._t += 0.05
+            result = {}
+            for ch in ACTIVE_CHANNELS:
+                phase = ch * math.pi / 2
+                base = 2.05 + 1.25 * math.sin(MoistureSensor._t + phase)
+                voltage = round(base + random.uniform(-0.05, 0.05), 4)
+                raw = int(voltage / 4.096 * 32767)
+                result[ch] = {"voltage": voltage, "raw": raw}
+            return result
 
 # ── 상수 ─────────────────────────────────────────────────────────
 BASELINE_SAMPLES = 5      # 기준값 측정 횟수
@@ -141,8 +160,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ch", type=int, nargs="+",
         choices=[0, 1, 2, 3],
-        default=[0, 1, 2, 3],
-        help="테스트할 ADS1115 채널 (기본: 0 1 2 3 전체)",
+        default=ACTIVE_CHANNELS,
+        help=f"테스트할 ADS1115 채널 (기본: settings.ACTIVE_CHANNELS = {ACTIVE_CHANNELS})",
     )
     args = parser.parse_args()
     run(sorted(set(args.ch)))
