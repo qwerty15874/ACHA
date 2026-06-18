@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//dev/**)",
+      "Bash(.venv/bin/pip list *)",
+      "Bash(.venv/bin/python -c \"import neopixel, inspect; print\\(neopixel.__file__\\)\")",
+      "Bash(.venv/bin/python -c ' *)",
+      "Bash(sudo i2cdetect -y 1)",
+      "Bash(.venv/bin/python -m py_compile src/led.py tests/test_led.py tests/test_led_isolate.py config/settings.py)",
+      "Bash(python3 -c \"import rich, rich; print\\('rich', rich.__version__\\)\")",
+      "Bash(timeout 3 python3 planB/terminal_view.py --demo)",
+      "Read(//tmp/**)",
+      "Bash(python3 -)",
+      "Bash(echo \"exit:$? \\(124=timeout=정상\\)\")"
+    ]
+  }
+}
